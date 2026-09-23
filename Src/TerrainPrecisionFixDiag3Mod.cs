@@ -17,6 +17,29 @@ namespace com.github.lhervier.ksp.terrainprecisionfixdiag3
         // The line in progress, the only one that still moves. Null while there is no active vessel.
         private Reading live;
 
+        // How many times the game has moved the origin of the world since the scene opened, and since
+        // the last recorded line. Every position in the table is read in that origin, so two lines with
+        // no shift between them were taken in the same frame.
+        private int originShifts;
+        private int originShiftsSinceRecord;
+
+        private void Awake()
+        {
+            // An instance method: EventData refuses a static handler.
+            GameEvents.onFloatingOriginShift.Add(OnOriginShift);
+        }
+
+        private void OnDestroy()
+        {
+            GameEvents.onFloatingOriginShift.Remove(OnOriginShift);
+        }
+
+        private void OnOriginShift(Vector3d offset, Vector3d nonFrame)
+        {
+            originShifts++;
+            originShiftsSinceRecord++;
+        }
+
         private void Update()
         {
             Vessel vessel = FlightGlobals.ActiveVessel;
@@ -80,9 +103,14 @@ namespace com.github.lhervier.ksp.terrainprecisionfixdiag3
                 {
                     READINGS.Add(live);
                     live = null;
+                    originShiftsSinceRecord = 0;
                 }
             }
             GUILayout.EndHorizontal();
+
+            // What the table is read in: the origin of the world, and how far the player is from it.
+            GUILayout.Space(4f);
+            GUILayout.Label(OriginLine());
 
             // Clear table button
             GUILayout.Space(10f);
@@ -93,6 +121,19 @@ namespace com.github.lhervier.ksp.terrainprecisionfixdiag3
 
             GUILayout.EndVertical();
             GUI.DragWindow();
+        }
+
+        /// <summary>How far the craft being flown has drifted from the origin of the world, and how many
+        /// times the game has moved that origin.</summary>
+        private string OriginLine()
+        {
+            Vessel active = FlightGlobals.ActiveVessel;
+            double distance = (active == null)
+                ? double.NaN
+                : ((Vector3d)active.vesselTransform.position).magnitude;
+            return "You are " + FormatUtils.FormatDistance(distance) + " m from the origin of the world -- "
+                + originShifts + " shift(s) since this scene opened, "
+                + originShiftsSinceRecord + " since the last record";
         }
 
         /// <summary>Draws the columns of one reading, or of an empty line when there is none. The caller

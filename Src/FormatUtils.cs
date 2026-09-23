@@ -51,6 +51,14 @@ namespace com.github.lhervier.ksp.terrainprecisionfixdiag3
         }
 
         /// <summary>
+        /// A distance in metres, to the tenth, thousands separated, or "--" when unknown.
+        /// </summary>
+        public static string FormatDistance(double metres)
+        {
+            return double.IsNaN(metres) ? NONE : metres.ToString("N1", CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
         /// A world position in metres, to the millimetre, or "--" when there is none.
         /// </summary>
         public static string FormatPosition(Vector3? position)
