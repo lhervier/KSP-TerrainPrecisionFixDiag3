@@ -5,7 +5,8 @@ namespace com.github.lhervier.ksp.terrainprecisionfixdiag3
 {
     /// <summary>
     /// World frame recorder. Shows, for the body of the active vessel, the two angles its rotation is split
-    /// into, which of the two frames it is in, and where its terrain sphere sits in world coordinates. The
+    /// into, which of the two frames it is in, and where its terrain sphere sits in world coordinates; and,
+    /// for the origin of the world, how far the active vessel is from it and how it has been moved. The
     /// player freezes these values into a table whenever it suits them, and the table survives scene
     /// changes, so reloading the same save several times builds it up line by line.
     /// </summary>
@@ -14,14 +15,14 @@ namespace com.github.lhervier.ksp.terrainprecisionfixdiag3
     {
         private static readonly List<Reading> READINGS = new List<Reading>();
 
-        // The line in progress, the only one that still moves. Null while there is no active vessel.
-        private Reading live;
+        // The line in progress, the only one that still moves. It lives from one record to the next, so
+        // that the origin shifts in between pile up in it.
+        private Reading live = new Reading();
 
-        // How many times the game has moved the origin of the world since the scene opened, and since
-        // the last recorded line. Every position in the table is read in that origin, so two lines with
-        // no shift between them were taken in the same frame.
+        // How many times the game has moved the origin of the world since the scene opened. Every position
+        // in the table is read in that origin, so two lines with no shift between them were taken in the
+        // same frame.
         private int originShifts;
-        private int originShiftsSinceRecord;
 
         private void Awake()
         {
@@ -37,13 +38,15 @@ namespace com.github.lhervier.ksp.terrainprecisionfixdiag3
         private void OnOriginShift(Vector3d offset, Vector3d nonFrame)
         {
             originShifts++;
-            originShiftsSinceRecord++;
+
+            // The bodies, and so the terrain sphere, are moved by the offset plus its out-of-frame part
+            // (FloatingOrigin.setOffset): that sum is the jump Sphere origin makes.
+            live.AddShift((offset + nonFrame).magnitude);
         }
 
         private void Update()
         {
-            Vessel vessel = FlightGlobals.ActiveVessel;
-            live = vessel != null ? Reading.Take(vessel.mainBody) : null;
+            live.Refresh(FlightGlobals.ActiveVessel);
         }
 
         // =========================================================
@@ -72,9 +75,14 @@ namespace com.github.lhervier.ksp.terrainprecisionfixdiag3
         {
             GUILayout.BeginVertical();
 
+            // The body every column is about.
+            Vessel active = FlightGlobals.ActiveVessel;
+            GUILayout.Label("Body: " + (active != null && active.mainBody != null ? active.mainBody.bodyName : "--"));
+
             // Header
             GUILayout.BeginHorizontal();
-            DrawCells("Record #", "Body", "UT (s)", "Frame", "directRotAngle", "InverseRotAngle", "Sphere origin (m)");
+            DrawCells("Record #", "UT (s)", "Frame", "directRotAngle", "InverseRotAngle", "Sphere origin (m)",
+                "Origin distance (m)", "Shifts", "Last shift (m)");
             GUILayout.EndHorizontal();
 
             // Recorded lines
@@ -99,16 +107,17 @@ namespace com.github.lhervier.ksp.terrainprecisionfixdiag3
             DrawReading(FormatUtils.NO_NUMBER, live);
             if (GUILayout.Button("Record", GUILayout.Width(Constants.COL_BUTTON)))
             {
-                if (live != null)
+                if (live.HasBody)
                 {
                     READINGS.Add(live);
-                    live = null;
-                    originShiftsSinceRecord = 0;
+                    live = new Reading();
+                    live.Refresh(FlightGlobals.ActiveVessel);
                 }
             }
             GUILayout.EndHorizontal();
 
-            // What the table is read in: the origin of the world, and how far the player is from it.
+            // The shifts of the origin of the world over the whole scene, which the Shifts column only
+            // counts from one record to the next.
             GUILayout.Space(4f);
             GUILayout.Label(OriginLine());
 
@@ -123,49 +132,47 @@ namespace com.github.lhervier.ksp.terrainprecisionfixdiag3
             GUI.DragWindow();
         }
 
-        /// <summary>How far the craft being flown has drifted from the origin of the world, and how many
-        /// times the game has moved that origin.</summary>
+        /// <summary>How many times the game has moved the origin of the world since the scene
+        /// opened.</summary>
         private string OriginLine()
         {
-            Vessel active = FlightGlobals.ActiveVessel;
-            double distance = (active == null)
-                ? double.NaN
-                : ((Vector3d)active.vesselTransform.position).magnitude;
-            return "You are " + FormatUtils.FormatDistance(distance) + " m from the origin of the world -- "
-                + originShifts + " shift(s) since this scene opened, "
-                + originShiftsSinceRecord + " since the last record";
+            return originShifts + " shift(s) of the origin of the world since this scene opened";
         }
 
         /// <summary>Draws the columns of one reading, or of an empty line when there is none. The caller
         /// owns the surrounding horizontal group, so that it can put a button at the end of the line.</summary>
         private static void DrawReading(int number, Reading reading)
         {
-            if (reading == null)
+            if (!reading.HasBody)
             {
-                DrawCells(FormatUtils.Format(number), "--", "--", "--", "--", "--", "--");
+                DrawCells(FormatUtils.Format(number), "--", "--", "--", "--", "--", "--", "--", "--");
                 return;
             }
             DrawCells(
                 FormatUtils.Format(number),
-                reading.BodyName,
                 FormatUtils.FormatTime(reading.UniversalTime),
                 FormatUtils.FormatFrame(reading.RotatingFrame),
                 FormatUtils.FormatAngle(reading.DirectRotAngle),
                 FormatUtils.FormatAngle(reading.InverseRotAngle),
-                FormatUtils.FormatPosition(reading.SphereOrigin)
+                FormatUtils.FormatPosition(reading.SphereOrigin),
+                FormatUtils.FormatDistance(reading.OriginDistance),
+                FormatUtils.Format(reading.Shifts),
+                FormatUtils.FormatLength(reading.LastShift)
             );
         }
 
-        private static void DrawCells(string record, string body, string ut, string frame,
-            string directRotAngle, string inverseRotAngle, string sphereOrigin)
+        private static void DrawCells(string record, string ut, string frame, string directRotAngle,
+            string inverseRotAngle, string sphereOrigin, string originDistance, string shifts, string lastShift)
         {
             GUILayout.Label(record, GUILayout.Width(Constants.COL_RECORD));
-            GUILayout.Label(body, GUILayout.Width(Constants.COL_BODY));
             GUILayout.Label(ut, GUILayout.Width(Constants.COL_UT));
             GUILayout.Label(frame, GUILayout.Width(Constants.COL_FRAME));
             GUILayout.Label(directRotAngle, GUILayout.Width(Constants.COL_ANGLE));
             GUILayout.Label(inverseRotAngle, GUILayout.Width(Constants.COL_ANGLE));
             GUILayout.Label(sphereOrigin, GUILayout.Width(Constants.COL_ORIGIN));
+            GUILayout.Label(originDistance, GUILayout.Width(Constants.COL_DISTANCE));
+            GUILayout.Label(shifts, GUILayout.Width(Constants.COL_SHIFTS));
+            GUILayout.Label(lastShift, GUILayout.Width(Constants.COL_LAST_SHIFT));
         }
     }
 }

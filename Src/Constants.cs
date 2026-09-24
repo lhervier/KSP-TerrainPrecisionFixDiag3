@@ -10,16 +10,18 @@ namespace com.github.lhervier.ksp.terrainprecisionfixdiag3
         // the layout, which grows it as records pile up.
         public const float WINDOW_X = 60f;
         public const float WINDOW_Y = 60f;
-        public const float WINDOW_WIDTH = 1050f;
+        public const float WINDOW_WIDTH = 1200f;
 
         // Column widths, in pixels. Fixed rather than laid out by content: the numbers only speak once
         // aligned as a column, and the skin font is not monospaced.
         public const float COL_RECORD = 70f;
-        public const float COL_BODY = 70f;
-        public const float COL_UT = 100f;
+        public const float COL_UT = 90f;
         public const float COL_FRAME = 80f;
         public const float COL_ANGLE = 130f;
         public const float COL_ORIGIN = 290f;
+        public const float COL_DISTANCE = 120f;
+        public const float COL_SHIFTS = 60f;
+        public const float COL_LAST_SHIFT = 110f;
         public const float COL_BUTTON = 80f;
     }
 }
