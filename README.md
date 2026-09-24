@@ -75,10 +75,16 @@ built in whatever frame the trip has left.
 
 ## Get it
 
-**Compile it** — clone this repository, set `KSPDIR` to your KSP install folder and run `build.bat`.
-It needs the .NET SDK, takes a few seconds, reads the KSP assemblies straight from your install, and
-puts the DLL in `GameData/TerrainPrecisionFixDiag3Mod/` inside the repository. It does not install
-anything.
+Either way you end up with the same `GameData/TerrainPrecisionFixDiag3Mod/` folder.
+
+**Download it** — from the assets of the
+[latest release](https://github.com/lhervier/KSP-TerrainPrecisionFixDiag3/releases/latest).
+
+**Or compile it** — clone this repository, set `KSPDIR` to your KSP install folder and run
+`build.bat`. It needs the .NET SDK, takes a few seconds, reads the KSP assemblies straight from your
+install, and puts the DLL in `GameData/TerrainPrecisionFixDiag3Mod/` inside the repository. It does
+not install anything. Worth doing if you would rather not run a binary you have no source for while
+reporting a measurement.
 
 ## Install
 
