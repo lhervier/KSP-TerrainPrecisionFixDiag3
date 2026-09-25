@@ -20,7 +20,7 @@ The two craft it uses are in [`craft/`](../craft/): copy
 [`Diag3-Rover.craft`](../craft/Diag3-Rover.craft) into the `Ships/SPH` folder of a sandbox game, and
 [`Diag3-Rocket.craft`](../craft/Diag3-Rocket.craft) into its `Ships/VAB` folder. Case 3 also needs a
 craft parked 2 km away, so it comes with a save,
-[`approach-kerbin.sfs`](../save/approach-kerbin.sfs): copy it into the folder of a sandbox game, and
+[`approach-kerbin.sfs`](../diag/approach-kerbin.sfs): copy it into the folder of a sandbox game, and
 load it from that game.
 
 ## Case 1: loading the same save three times
