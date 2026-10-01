@@ -32,7 +32,7 @@ sphere (`PQS`). Every piece of ground, and the collision surface your landing ge
 relative to it. That object has a position, **Sphere origin**, which the floating origin moves, and an
 orientation, **directRotAngle**, which the rotation of the planet moves. Those two values are what this
 mod calls the frame the terrain is built in. What that frame does to the ground is on [the page of the
-fix](https://github.com/lhervier/KSP-TerrainPrecisionFix/blob/master/docs/the-culprit.md#why-it-is-different-at-every-load).
+fix](https://github.com/lhervier/KSP-TerrainPrecisionFix/blob/master/docs/the-culprit-ground.md#why-it-is-different-at-every-load).
 
 ## The window
 
